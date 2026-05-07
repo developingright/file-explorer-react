@@ -1,73 +1,77 @@
-# React + TypeScript + Vite
+# React File Explorer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A VS Code-style file explorer built entirely by hand in React + TypeScript — no AI, no tutorials, no component libraries.
 
-Currently, two official plugins are available:
+![File tree](src/assets/screenshot-tree.png) ![Context menu](src/assets/screenshot-context-menu.png)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Purpose
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+This project was built as a deliberate practice exercise to understand how non-trivial UI components work at a fundamental level.
 
-## Expanding the ESLint configuration
+The goal was to write something real from scratch — no shortcuts — and be able to explain every single line.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## What It Does
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Recursive tree rendering** — folders can be nested infinitely deep; one component handles every level
+- **Collapsible folders** — click to open/close; closed folders are removed from the DOM entirely (not just hidden)
+- **Dynamic icons** — file, closed folder, and open folder icons that update on interaction
+- **Right-click context menu** — appears at cursor position, dismisses on outside click
+- **Add files and folders** — right-click any folder to add a child file or folder by name
+- **Delete nodes** — right-click any node to remove it (recursively removes nested children)
+- **Drag and drop** — drag any file or folder into another folder to move it
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## Concepts Practiced
+
+**Recursive components**
+`TreeNode` renders itself inside itself. A folder maps over its children and renders a `<TreeNode>` for each one. This is how any depth of nesting works automatically with a single component.
+
+**Recursive state mutations**
+`deleteNode` and `addNode` are pure recursive functions that walk the tree and return a new tree. No mutation — React state is always replaced with a new object.
+
+**useState for local UI state**
+Each `TreeNode` manages its own `isOpen` boolean independently. Parent components don't know or care which folders are open.
+
+**useEffect for global listeners**
+The context menu closes when you click anywhere on the page. That requires a `document.addEventListener` on mount and cleanup (`removeEventListener`) on unmount.
+
+**Drag and drop via HTML5 API**
+`onDragStart`, `onDragOver`, and `onDrop` events track which node is being dragged and which folder it's being dropped into. On drop: delete the node from its old position, insert it into the new parent.
+
+**TypeScript discriminated unions**
+`FileNode` and `FolderNode` are separate types with a shared `type` field (`'file'` vs `'folder'`). TypeScript narrows the type automatically inside `if (node.type === 'folder')` checks — no casting needed.
+
+---
+
+## Stack
+
+- React 18
+- TypeScript
+- Tailwind CSS
+- Lucide React (icons)
+- Vite
+
+---
+
+## Run Locally
+
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Why This Matters
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Anyone can prompt an AI to generate a file explorer. Building it by hand forces you to actually understand:
+
+- Why recursive data structures need recursive components
+- Why immutable state updates matter in React
+- How browser events bubble and why `stopPropagation` is sometimes necessary
+- How to model UI state — what goes in local state vs lifted state
